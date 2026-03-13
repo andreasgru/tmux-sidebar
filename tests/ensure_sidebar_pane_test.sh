@@ -9,7 +9,7 @@ fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 bash scripts/toggle-sidebar.sh
 
 assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 1'
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 40'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
@@ -17,7 +17,7 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 
 bash scripts/ensure-sidebar-pane.sh
 
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 40'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
@@ -26,7 +26,7 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 
 bash scripts/ensure-sidebar-pane.sh
 
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 40'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
@@ -37,7 +37,7 @@ printf '%%90\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_pane_w1.txt"
 
 bash scripts/ensure-sidebar-pane.sh
 
-assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 40'
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
@@ -46,7 +46,7 @@ printf '%%90\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_pane_w1.txt"
 
 bash scripts/ensure-sidebar-pane.sh
 
-assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 40'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
@@ -55,4 +55,13 @@ printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_creating_w1.txt"
 
 bash scripts/ensure-sidebar-pane.sh
 
-assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 40'
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 35'
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+printf '28\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
+
+bash scripts/ensure-sidebar-pane.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 28'

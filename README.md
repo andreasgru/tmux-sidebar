@@ -66,6 +66,19 @@ tmux source-file ~/.tmux.conf
 - `Enter` jumps to the selected pane
 - `Ctrl+l` leaves the sidebar and returns focus to the main pane
 
+## Configuration
+
+The sidebar width defaults to `35` columns.
+
+Set a custom width in your tmux config:
+
+```tmux
+set -g @tmux_sidebar_width 28
+```
+
+If you need a process-level override, `TMUX_SIDEBAR_WIDTH` takes precedence over
+the tmux option.
+
 ## Hook Integration
 
 Each agent should report pane-local status through
