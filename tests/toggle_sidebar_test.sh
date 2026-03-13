@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+. "$(dirname "$0")/testlib.sh"
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+
+bash scripts/toggle-sidebar.sh
+assert_eq "$(fake_tmux_sidebar_count)" "1"
+assert_eq "$(fake_tmux_current_pane)" "%1"
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'split-window -h -b -d -f -l 40'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_main_pane %1'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 1'
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'sleep 1'
+assert_file_not_contains "$TEST_TMUX_DATA_DIR/commands.log" 'while true'
+
+bash scripts/toggle-sidebar.sh
+assert_eq "$(fake_tmux_sidebar_count)" "0"
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 0'
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+printf '%%90\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_pane_w1.txt"
+
+bash scripts/toggle-sidebar.sh
+
+assert_eq "$(fake_tmux_sidebar_count)" "1"
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g @tmux_sidebar_enabled 1'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -g -u @tmux_sidebar_pane_w1'
+
+assert_file_contains "sidebar.tmux" 'bind-key t run-shell'
+assert_file_contains "sidebar.tmux" 'pane-focus-in[202]'
+assert_file_contains "sidebar.tmux" '#{d:current_file}/scripts/toggle-sidebar.sh'
+assert_file_contains "sidebar.tmux" '#{d:current_file}/scripts/clear-pane-state.sh'
