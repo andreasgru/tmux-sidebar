@@ -155,6 +155,10 @@ def focus_main_pane() -> None:
     subprocess.run(["bash", str(Path(__file__).with_name("focus-main-pane.sh"))], check=False)
 
 
+def close_sidebar() -> None:
+    subprocess.run(["bash", str(Path(__file__).with_name("toggle-sidebar.sh"))], check=False)
+
+
 def interactive() -> None:
     def main(stdscr) -> None:
         curses.curs_set(0)
@@ -183,6 +187,7 @@ def interactive() -> None:
             if key == -1:
                 continue
             if key in (ord("q"), 27):
+                close_sidebar()
                 break
             if key in (ord("j"), curses.KEY_DOWN) and pane_rows:
                 current_index = next(
