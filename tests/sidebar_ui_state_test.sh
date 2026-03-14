@@ -196,3 +196,61 @@ PY
 )"
 
 assert_eq "$python_width" "25"
+
+rm -f "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_width.txt"
+export TMUX_SIDEBAR_WIDTH=''
+
+fake_tmux_set_tree <<'EOF'
+work|@1|2.1.76|%20|2.1.76|2.1.76|1
+work|@1|2.1.76|%21|lazygit|lazygit|0
+work|@1|2.1.76|%22|2.1.76|2.1.76|0
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%20.json" <<'EOF'
+{"pane_id":"%20","app":"claude","status":"needs-input","updated_at":100}
+EOF
+
+output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+
+window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
+assert_contains "$window_line" 'claude'
+assert_not_contains "$window_line" '2.1.76'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|2.1.76|%23|2.1.76|2.1.76|1
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+
+output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" '2.1.76'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|myproject|%24|2.1.76|2.1.76|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%24.json" <<'EOF'
+{"pane_id":"%24","app":"claude","status":"running","updated_at":100}
+EOF
+
+output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" '└─ myproject'
+case "$output" in
+  *'├─ claude'* | *'└─ claude'*'├─'* ) ;;
+esac
+
+fake_tmux_set_tree <<'EOF'
+work|@1|2.1.76|%25|2.1.76|2.1.76|1
+work|@1|2.1.76|%26|lazygit|lazygit|0
+work|@1|2.1.76|%27|2.1.76|2.1.76|0
+EOF
+rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%27.json" <<'EOF'
+{"pane_id":"%27","app":"claude","status":"running","updated_at":100}
+EOF
+
+output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+
+window_line="$(printf '%s\n' "$output" | grep -E '^\s+[├└]─' | sed -n '2p')"
+assert_contains "$window_line" 'claude'
+assert_not_contains "$window_line" '2.1.76'

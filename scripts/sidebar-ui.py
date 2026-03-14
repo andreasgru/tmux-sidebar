@@ -201,6 +201,19 @@ def pane_display_label(command: str, title: str, state: dict | None) -> str:
     return command
 
 
+def window_display_name(window_name: str, panes: list[dict], pane_states: dict[str, dict]) -> str:
+    if not looks_like_semver(window_name):
+        return window_name
+
+    for pane in sorted(panes, key=lambda p: not p["active"]):
+        pane_state = pane_states.get(pane["id"], {})
+        label = pane_display_label(pane["label"], pane["title"], pane_state)
+        if label != pane["label"]:
+            return label
+
+    return window_name
+
+
 def sidebar_has_focus() -> bool:
     sidebar_pane = os.environ.get("TMUX_PANE", "")
     if not sidebar_pane:
@@ -305,10 +318,11 @@ def load_tree() -> list[dict]:
         for window_index, window in enumerate(windows):
             window_last = window_index == len(windows) - 1
             window_prefix = session_prefix + ("   " if window_last else "│  ")
+            display_name = window_display_name(window["name"], window["panes"], pane_states)
             rows.append(
                 {
                     "kind": "window",
-                    "text": f"{session_prefix}{'└─' if window_last else '├─'} {window['name']}",
+                    "text": f"{session_prefix}{'└─' if window_last else '├─'} {display_name}",
                 }
             )
             for pane_index, pane in enumerate(window["panes"]):
