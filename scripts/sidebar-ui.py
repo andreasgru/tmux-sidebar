@@ -241,29 +241,41 @@ def _parse_border_format_colors() -> dict[str, str]:
     return colors
 
 
+DEFAULT_COLOR_FG = "ffffff"
+
+
 def init_sidebar_colors() -> tuple[int, int, int]:
     try:
         if curses.COLORS < 256:
             return curses.A_BOLD, 0, 0
     except AttributeError:
         return curses.A_BOLD, 0, 0
-    active_hex = _option_hex("@tmux_sidebar_color_active") or parse_fg_hex(tmux_option("pane-active-border-style"))
     fmt_colors = _parse_border_format_colors()
-    session_hex = _option_hex("@tmux_sidebar_color_session") or fmt_colors.get("active_path", "")
-    pane_hex = _option_hex("@tmux_sidebar_color_pane") or parse_fg_hex(tmux_option("window-status-style")) or "a9b1d6"
-    active_attr = curses.A_BOLD
-    session_attr = 0
-    pane_attr = 0
-    if active_hex:
-        curses.init_pair(COLOR_PAIR_ACTIVE, _define_color(240, active_hex), -1)
-        active_attr = curses.color_pair(COLOR_PAIR_ACTIVE) | curses.A_BOLD
-    if session_hex:
-        curses.init_pair(COLOR_PAIR_SESSION, _define_color(241, session_hex), -1)
-        session_attr = curses.color_pair(COLOR_PAIR_SESSION)
-    if pane_hex:
-        curses.init_pair(COLOR_PAIR_PANE, _define_color(242, pane_hex), -1)
-        pane_attr = curses.color_pair(COLOR_PAIR_PANE)
-    return active_attr, session_attr, pane_attr
+    active_hex = (
+        _option_hex("@tmux_sidebar_color_active")
+        or parse_fg_hex(tmux_option("pane-active-border-style"))
+        or DEFAULT_COLOR_FG
+    )
+    session_hex = (
+        _option_hex("@tmux_sidebar_color_session")
+        or fmt_colors.get("active_path", "")
+        or parse_fg_hex(tmux_option("status-style"))
+        or DEFAULT_COLOR_FG
+    )
+    pane_hex = (
+        _option_hex("@tmux_sidebar_color_pane")
+        or fmt_colors.get("inactive_command", "")
+        or parse_fg_hex(tmux_option("window-status-style"))
+        or DEFAULT_COLOR_FG
+    )
+    curses.init_pair(COLOR_PAIR_ACTIVE, _define_color(240, active_hex), -1)
+    curses.init_pair(COLOR_PAIR_SESSION, _define_color(241, session_hex), -1)
+    curses.init_pair(COLOR_PAIR_PANE, _define_color(242, pane_hex), -1)
+    return (
+        curses.color_pair(COLOR_PAIR_ACTIVE) | curses.A_BOLD,
+        curses.color_pair(COLOR_PAIR_SESSION),
+        curses.color_pair(COLOR_PAIR_PANE),
+    )
 
 
 def configured_scrolloff() -> int:
