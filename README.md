@@ -17,7 +17,7 @@ side of every window — with live agent status badges for `claude`, `codex`, an
   │      ├─ claude       │                                │
   │      │  ├─ claude    │                                │
   │      │  ├─ lazygit   │                                │
-  │ ▶    │  ├─ claude [~]│                                │
+  │ ▶    │  ├─ claude ⏳│                                │
   │      │  └─ yazi      │                                │
   │      └─ yazi         │                                │
   │         ├─ yazi      │                                │
@@ -37,10 +37,10 @@ Unicode tree. Select any pane and jump to it with `Enter`.
 
 | Badge | Status      | Meaning                        |
 | :---: | ----------- | ------------------------------ |
-| `[~]` | running     | Agent is working               |
-| `[?]` | needs-input | Waiting for permission / input |
-| `[!]` | done        | Finished                       |
-| `[x]` | error       | Something went wrong           |
+| `⏳` | running     | Agent is working               |
+| `󰍑` | needs-input | Waiting for permission / input |
+| `󰄬` | done        | Finished                       |
+| `󰚌` | error       | Something went wrong           |
 
 Badges for `done` and `needs-input` clear automatically when you focus the pane.
 
@@ -174,6 +174,17 @@ with an active agent badge still appear under their window.
 set -g @tmux_sidebar_hide_panes on     # default: off
 ```
 
+### Badge icons
+
+Override the default badge icons for agent status indicators:
+
+```tmux
+set -g @tmux_sidebar_badge_running      "⏳"   # default: ⏳
+set -g @tmux_sidebar_badge_needs_input  "󰍑"   # default: 󰍑
+set -g @tmux_sidebar_badge_done         "󰄬"   # default: 󰄬
+set -g @tmux_sidebar_badge_error        "󰚌"   # default: 󰚌
+```
+
 ### Key overrides
 
 Override the default tmux keybindings for toggle and focus:
@@ -195,6 +206,10 @@ set -g @tmux_sidebar_focus_key   B    # default: T
 | `@tmux_sidebar_close_pane_shortcut`  |   `x`   | Shortcut to close selected pane  |
 | `@tmux_sidebar_hide_panes`           |  `off`  | Show only sessions and windows   |
 | `@tmux_sidebar_scrolloff`            |   `8`   | Cursor scroll margin (like vim)  |
+| `@tmux_sidebar_badge_running`         |  `⏳`   | Badge for running status         |
+| `@tmux_sidebar_badge_needs_input`    |  `󰍑`   | Badge for needs-input status     |
+| `@tmux_sidebar_badge_done`           |  `󰄬`   | Badge for done status            |
+| `@tmux_sidebar_badge_error`          |  `󰚌`   | Badge for error status           |
 | `@tmux_sidebar_toggle_key`           |   `t`   | Tmux key to toggle sidebar       |
 | `@tmux_sidebar_focus_key`            |   `T`   | Tmux key to focus sidebar        |
 

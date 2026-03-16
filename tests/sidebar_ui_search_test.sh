@@ -326,10 +326,68 @@ assert result == "%1", f"expected %1 (prev), got {result}"
 result = module.next_search_match(rows, "%1", matches, -1)
 assert result == "%3", f"expected %3 (wrap back), got {result}"
 
-# no selectable matches
+# session match resolves to first pane in that session
 session_only = {0}
+result = module.next_search_match(rows, "%2", session_only, 1)
+assert result == "%1", f"expected %1 (first pane of session), got {result}"
+
+# session match: already on resolved pane, wraps to self
 result = module.next_search_match(rows, "%1", session_only, 1)
-assert result == "%1", f"expected %1 (unchanged), got {result}"
+assert result == "%1", f"expected %1 (wrap to self), got {result}"
+
+# window match (non-selectable) resolves to first pane under that window
+rows_multi = [
+    {"kind": "session", "text": "work"},
+    {"kind": "window", "text": "editor"},
+    {"kind": "pane", "pane_id": "%1", "text": "vim"},
+    {"kind": "pane", "pane_id": "%2", "text": "zsh"},
+    {"kind": "window", "text": "build"},
+    {"kind": "pane", "pane_id": "%3", "text": "make"},
+]
+window_matches = module.find_search_matches(rows_multi, "build")
+assert window_matches == {4}, f"expected {{4}}, got {window_matches}"
+result = module.next_search_match(rows_multi, "%1", window_matches, 1)
+assert result == "%3", f"expected %3 (first pane under build window), got {result}"
+
+# selectable window (has pane_id) stays on the window itself
+rows_selectable_win = [
+    {"kind": "session", "text": "work"},
+    {"kind": "window", "pane_id": "@1", "text": "editor"},
+    {"kind": "pane", "pane_id": "%1", "text": "vim"},
+    {"kind": "pane", "pane_id": "%2", "text": "zsh"},
+]
+win_matches = module.find_search_matches(rows_selectable_win, "editor")
+assert win_matches == {1}, f"expected {{1}}, got {win_matches}"
+result = module.next_search_match(rows_selectable_win, "%1", win_matches, 1)
+assert result == "@1", f"expected @1 (selectable window), got {result}"
+
+# multiple sessions match: n/N cycle between them
+rows_sessions = [
+    {"kind": "session", "text": "work-dev"},
+    {"kind": "window", "text": "editor"},
+    {"kind": "pane", "pane_id": "%1", "text": "vim"},
+    {"kind": "session", "text": "work-ops"},
+    {"kind": "window", "text": "logs"},
+    {"kind": "pane", "pane_id": "%2", "text": "tail"},
+]
+session_matches = module.find_search_matches(rows_sessions, "work")
+assert session_matches == {0, 3}, f"expected {{0, 3}}, got {session_matches}"
+# from %1 (row 2), n jumps to %2 (first pane of second session)
+result = module.next_search_match(rows_sessions, "%1", session_matches, 1)
+assert result == "%2", f"expected %2 (next session match), got {result}"
+# from %2 (row 5), n wraps to %1 (first pane of first session)
+result = module.next_search_match(rows_sessions, "%2", session_matches, 1)
+assert result == "%1", f"expected %1 (wrap to first), got {result}"
+# from %2, N goes to %1
+result = module.next_search_match(rows_sessions, "%2", session_matches, -1)
+assert result == "%1", f"expected %1 (prev session), got {result}"
+# from %1, N wraps to %2
+result = module.next_search_match(rows_sessions, "%1", session_matches, -1)
+assert result == "%2", f"expected %2 (wrap back), got {result}"
+
+# no matches at all
+result = module.next_search_match(rows, "%1", set(), 1)
+assert result == "%1", f"expected %1 (no matches), got {result}"
 
 print(json.dumps({"status": "ok"}))
 PY

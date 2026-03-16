@@ -101,7 +101,7 @@ def run_tmux(*args: str) -> str:
 
 DEFAULT_BADGES: dict[str, str] = {
     "running": "⏳",
-    "needs-input": "\U000f0351",  # 󰌑
+    "needs-input": "\U000f0351",  # 󰍑
     "done": "\U000f012c",  # 󰄬
     "error": "\U000f068c",  # 󰚌
 }
@@ -605,19 +605,36 @@ def find_search_matches(rows: list[dict], query: str) -> set[int]:
 
 
 def next_search_match(rows: list[dict], selected_pane_id: str, search_matches: set[int], direction: int = 1) -> str:
-    matching = [(i, rows[i]["pane_id"]) for i in sorted(search_matches) if "pane_id" in rows[i]]
-    if not matching:
+    targets: list[tuple[int, str]] = []
+    seen_pane_ids: set[str] = set()
+    for i in sorted(search_matches):
+        row = rows[i]
+        if "pane_id" in row:
+            pane_id = row["pane_id"]
+            nav_idx = i
+        else:
+            pane_id = None
+            nav_idx = None
+            for j in range(i + 1, len(rows)):
+                if "pane_id" in rows[j]:
+                    pane_id = rows[j]["pane_id"]
+                    nav_idx = j
+                    break
+        if pane_id and pane_id not in seen_pane_ids:
+            targets.append((nav_idx, pane_id))
+            seen_pane_ids.add(pane_id)
+    if not targets:
         return selected_pane_id
     current_row_idx = next((i for i, row in enumerate(rows) if row.get("pane_id") == selected_pane_id), -1)
     if direction == 1:
-        for row_idx, pane_id in matching:
-            if row_idx > current_row_idx:
+        for nav_idx, pane_id in targets:
+            if nav_idx > current_row_idx:
                 return pane_id
-        return matching[0][1]
-    for row_idx, pane_id in reversed(matching):
-        if row_idx < current_row_idx:
+        return targets[0][1]
+    for nav_idx, pane_id in reversed(targets):
+        if nav_idx < current_row_idx:
             return pane_id
-    return matching[-1][1]
+    return targets[-1][1]
 
 
 _cached_shortcuts: dict[str, str] | None = None

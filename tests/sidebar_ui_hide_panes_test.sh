@@ -175,7 +175,7 @@ def fake_load_tree():
             "pane_id": "%5",
             "session": "work",
             "window": "@3",
-            "text": "claude [~]",
+            "text": "claude ⏳",
             "active": False,
         },
     ]
@@ -237,7 +237,7 @@ PY
 # Cursor should visit: @1 (editor), @2 (logs), %5 (claude), @2 (logs)
 assert_contains "$output" '"▶ editor"'
 assert_contains "$output" '"▶ logs"'
-assert_contains "$output" '"▶ claude [~]"'
+assert_contains "$output" '"▶ claude ⏳"'
 
 # Test x on a collapsed window: kill-window when session has multiple windows
 output="$(python3 - <<'PY'
