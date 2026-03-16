@@ -99,11 +99,14 @@ def run_tmux(*args: str) -> str:
     return subprocess.check_output(["tmux", *args], text=True, stderr=subprocess.DEVNULL)
 
 
+_last_row_map_json = ""
+
+
 def _write_row_map(rows: list[dict], scroll_offset: int) -> None:
+    global _last_row_map_json
     sidebar_pane = os.environ.get("TMUX_PANE", "")
     if not sidebar_pane:
         return
-    map_path = STATE_DIR / f"rowmap-{sidebar_pane}.json"
     data = {"scroll_offset": scroll_offset, "rows": []}
     for row in rows:
         entry: dict = {"kind": row["kind"], "session": row.get("session", "")}
@@ -112,12 +115,17 @@ def _write_row_map(rows: list[dict], scroll_offset: int) -> None:
         if "pane_id" in row:
             entry["pane_id"] = row["pane_id"]
         data["rows"].append(entry)
+    json_str = json.dumps(data)
+    if json_str == _last_row_map_json:
+        return
+    _last_row_map_json = json_str
+    map_path = STATE_DIR / f"rowmap-{sidebar_pane}.json"
     tmp = map_path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data))
+    tmp.write_text(json_str)
     tmp.rename(map_path)
 
 
-def _run_context_menu(rows: list[dict], scroll_offset: int, mouse_y: int) -> None:
+def _run_context_menu(mouse_y: int) -> None:
     sidebar_pane = os.environ.get("TMUX_PANE", "")
     if not sidebar_pane:
         return
@@ -775,7 +783,7 @@ def run_interactive(stdscr) -> None:
                 needs_render = True
                 continue
             if bstate & (curses.BUTTON3_PRESSED | curses.BUTTON3_CLICKED):
-                _run_context_menu(rows, scroll_offset, my)
+                _run_context_menu(my)
                 continue
             if bstate & (curses.BUTTON1_PRESSED | curses.BUTTON1_CLICKED):
                 row_idx = my + scroll_offset
@@ -856,8 +864,7 @@ def run_interactive(stdscr) -> None:
         elif action == "context_menu":
             sel_idx = find_selected_row_index(rows, selected_pane_id)
             if sel_idx is not None:
-                screen_y = sel_idx - scroll_offset
-                _run_context_menu(rows, scroll_offset, max(0, screen_y))
+                _run_context_menu(max(0, sel_idx - scroll_offset))
             next_refresh_at = 0.0
 
 

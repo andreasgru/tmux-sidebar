@@ -2,8 +2,9 @@
 set -euo pipefail
 
 CDPATH= cd -- "$(dirname "$0")" || exit 1
+. ./lib.sh
 SCRIPTS_DIR="$(pwd)"
-SIDEBAR_STATE="${TMUX_SIDEBAR_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/tmux-sidebar}"
+SIDEBAR_STATE="$(print_state_dir)"
 
 # Write a tmux command file that registers our MouseDown3Pane binding.
 # We source-file it because the binding uses { } blocks that bash can't pass directly.

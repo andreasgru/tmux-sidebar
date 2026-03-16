@@ -7,30 +7,36 @@ set -euo pipefail
 # The calling tmux binding then source-files this to open the menu
 # in the mouse event context (so -xM -yM and hold-release work).
 
+CDPATH= cd -- "$(dirname "$0")" || exit 1
+. ./lib.sh
+
 sidebar_pane="${1:?sidebar pane id required}"
 mouse_y="${2:-0}"
 
-state_dir="${TMUX_SIDEBAR_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/tmux-sidebar}"
+state_dir="$(print_state_dir)"
 rowmap_file="$state_dir/rowmap-${sidebar_pane}.json"
 menu_file="$state_dir/menu-cmd.tmux"
 
 [ -f "$rowmap_file" ] || exit 1
 
-read -r scroll_offset row_json < <(python3 -c "
+# Single python3 call extracts all needed fields at once.
+read -r kind session window pane_id < <(python3 -c "
 import json, sys
 data = json.load(open('$rowmap_file'))
-offset = data.get('scroll_offset', 0)
 rows = data.get('rows', [])
-idx = $mouse_y + offset
+idx = $mouse_y + data.get('scroll_offset', 0)
 if 0 <= idx < len(rows):
-    print(offset, json.dumps(rows[idx]))
+    r = rows[idx]
+    print(r.get('kind',''), r.get('session',''), r.get('window',''), r.get('pane_id',''))
 else:
-    print(offset, 'null')
+    print('null', '', '', '')
 ")
 
-scripts_dir="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
+scripts_dir="$(pwd)"
 
-if [ "$row_json" = "null" ]; then
+escape_tmux() { printf '%s' "$1" | sed "s/'/'\\\\''/g"; }
+
+if [ "$kind" = "null" ]; then
     cat > "$menu_file" <<TMUX
 display-menu -xM -yM -T "#[align=centre] Sidebar " \
   "New Session" "s" "command-prompt -p 'session name:' \"new-session -d -s '%%' \\\\; switch-client -t '%%'\"" \
@@ -42,16 +48,12 @@ TMUX
     exit 0
 fi
 
-kind="$(printf '%s' "$row_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['kind'])")"
-session="$(printf '%s' "$row_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['session'])")"
-
-escape_tmux() { printf '%s' "$1" | sed "s/'/'\\\\''/g"; }
+qs="$(escape_tmux "$session")"
 
 case "$kind" in
     session)
-        qs="$(escape_tmux "$session")"
         cat > "$menu_file" <<TMUX
-display-menu -xM -yM -T "#[align=centre] $session " \
+display-menu -xM -yM -T "#[align=centre] $(escape_tmux "$session") " \
   "Switch to"    "s" "switch-client -t '$qs'" \
   "Rename"       "r" "command-prompt -I '$qs' -p 'Rename session:' \"rename-session -t '$qs' '%%'\"" \
   "New Window"   "w" "new-window -t '$qs'" \
@@ -61,11 +63,9 @@ display-menu -xM -yM -T "#[align=centre] $session " \
 TMUX
         ;;
     window)
-        window="$(printf '%s' "$row_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['window'])")"
-        qs="$(escape_tmux "$session")"
         qw="$(escape_tmux "$window")"
         cat > "$menu_file" <<TMUX
-display-menu -xM -yM -T "#[align=centre] $session:$window " \
+display-menu -xM -yM -T "#[align=centre] $(escape_tmux "$session"):$(escape_tmux "$window") " \
   "Select"            "s" "switch-client -t '$qs' \\; select-window -t '$qw'" \
   "Rename"            "r" "command-prompt -I '' -p 'Rename window:' \"rename-window -t '$qw' '%%'\"" \
   "New Window After"  "w" "new-window -a -t '$qw'" \
@@ -77,13 +77,10 @@ display-menu -xM -yM -T "#[align=centre] $session:$window " \
 TMUX
         ;;
     pane)
-        window="$(printf '%s' "$row_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['window'])")"
-        pane_id="$(printf '%s' "$row_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['pane_id'])")"
-        qs="$(escape_tmux "$session")"
         qw="$(escape_tmux "$window")"
         qp="$(escape_tmux "$pane_id")"
         cat > "$menu_file" <<TMUX
-display-menu -xM -yM -T "#[align=centre] $pane_id " \
+display-menu -xM -yM -T "#[align=centre] $(escape_tmux "$pane_id") " \
   "Select"            "s" "switch-client -t '$qs' \\; select-window -t '$qw' \\; select-pane -t '$qp'" \
   "Zoom"              "z" "resize-pane -Z -t '$qp'" \
   "" "" "" \
