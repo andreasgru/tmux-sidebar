@@ -61,6 +61,7 @@ MOUSE_SCROLL_LINES = 3
 DEFAULT_SCROLLOFF = 8
 
 _refresh_requested = False
+_menu_proc: subprocess.Popen | None = None
 
 
 def _handle_sigusr1(signum: int, frame: object) -> None:
@@ -97,6 +98,119 @@ def _remove_pid_file() -> None:
 
 def run_tmux(*args: str) -> str:
     return subprocess.check_output(["tmux", *args], text=True, stderr=subprocess.DEVNULL)
+
+
+def get_pane_offset() -> tuple[int, int]:
+    sidebar_pane = os.environ.get("TMUX_PANE", "")
+    if not sidebar_pane:
+        return 0, 0
+    try:
+        raw = run_tmux(
+            "display-message", "-p", "-t", sidebar_pane,
+            "#{pane_left} #{pane_top}",
+        ).strip()
+        left, top = raw.split()
+        return int(left), int(top)
+    except (subprocess.CalledProcessError, ValueError, IndexError):
+        return 0, 0
+
+
+def open_display_menu(args: list[str]) -> None:
+    global _menu_proc
+    if _menu_proc is not None:
+        _menu_proc.poll()
+        _menu_proc = None
+    sidebar_pane = os.environ.get("TMUX_PANE", "")
+    cmd = ["tmux", "display-menu"]
+    if sidebar_pane:
+        cmd.extend(["-t", sidebar_pane])
+    cmd.extend(args)
+    _menu_proc = subprocess.Popen(
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
+
+def _session_menu_args(row: dict, abs_x: int, abs_y: int) -> list[str]:
+    session = row["session"]
+    qs = shlex.quote(session)
+    return [
+        "-T", f"#[align=centre] {session} ",
+        "-x", str(abs_x), "-y", str(abs_y),
+        "Switch to", "s", f"switch-client -t {qs}",
+        "Rename", "r", f"command-prompt -I {qs} -p 'Rename session:' \"rename-session -t {qs} '%%'\"",
+        "New Window", "w", f"new-window -t {qs}",
+        "Detach", "d", f"detach-client -s {qs}",
+        "", "", "",
+        "Kill Session", "x", f"confirm-before -p 'Kill session? (y/n)' \"kill-session -t {qs}\"",
+    ]
+
+
+def _window_menu_args(row: dict, abs_x: int, abs_y: int) -> list[str]:
+    session = row["session"]
+    window = row["window"]
+    qs = shlex.quote(session)
+    qw = shlex.quote(window)
+    return [
+        "-T", f"#[align=centre] {session}:{window} ",
+        "-x", str(abs_x), "-y", str(abs_y),
+        "Select", "s", f"switch-client -t {qs} \\; select-window -t {qw}",
+        "Rename", "r", f"command-prompt -I '' -p 'Rename window:' \"rename-window -t {qw} '%%'\"",
+        "New Window After", "w", f"new-window -a -t {qw}",
+        "", "", "",
+        "Split Horizontal", "h", f"split-window -h -t {qw}",
+        "Split Vertical", "v", f"split-window -v -t {qw}",
+        "", "", "",
+        "Kill Window", "x", f"confirm-before -p 'Kill window? (y/n)' \"kill-window -t {qw}\"",
+    ]
+
+
+def _pane_menu_args(row: dict, abs_x: int, abs_y: int) -> list[str]:
+    pane_id = row["pane_id"]
+    session = row["session"]
+    window = row["window"]
+    qs = shlex.quote(session)
+    qw = shlex.quote(window)
+    qp = shlex.quote(pane_id)
+    return [
+        "-T", f"#[align=centre] {pane_id} ",
+        "-x", str(abs_x), "-y", str(abs_y),
+        "Select", "s", f"switch-client -t {qs} \\; select-window -t {qw} \\; select-pane -t {qp}",
+        "Zoom", "z", f"resize-pane -Z -t {qp}",
+        "", "", "",
+        "Split Horizontal", "h", f"split-window -h -t {qp}",
+        "Split Vertical", "v", f"split-window -v -t {qp}",
+        "Break to Window", "!", f"break-pane -d -t {qp}",
+        "", "", "",
+        "Mark", "m", f"select-pane -m -t {qp}",
+        "", "", "",
+        "Kill Pane", "x", f"confirm-before -p 'Kill pane? (y/n)' \"kill-pane -t {qp}\"",
+    ]
+
+
+def show_context_menu(row: dict, abs_x: int, abs_y: int) -> None:
+    kind = row["kind"]
+    if kind == "session":
+        args = _session_menu_args(row, abs_x, abs_y)
+    elif kind == "window":
+        args = _window_menu_args(row, abs_x, abs_y)
+    elif kind == "pane":
+        args = _pane_menu_args(row, abs_x, abs_y)
+    else:
+        return
+    open_display_menu(args)
+
+
+def show_empty_context_menu(abs_x: int, abs_y: int) -> None:
+    scripts_dir = str(Path(__file__).parent)
+    open_display_menu([
+        "-T", "#[align=centre] Sidebar ",
+        "-x", str(abs_x), "-y", str(abs_y),
+        "New Session", "s", "command-prompt -p 'session name:' \"new-session -d -s '%%' \\; switch-client -t '%%'\"",
+        "New Window", "w", "new-window",
+        "", "", "",
+        "Refresh", "r", f"run-shell -b 'kill -USR1 {os.getpid()}'",
+        "Close Sidebar", "q", f"run-shell -b 'bash {shlex.quote(scripts_dir + '/close-sidebar.sh')}'",
+    ])
 
 
 def badge_for_status(status: str) -> str:
@@ -639,6 +753,8 @@ def process_keypress(
     key_char = chr(key) if 0 <= key <= 255 and chr(key).isprintable() else ""
     if key == ord("q"):
         return "", selected_pane_id, "close", False
+    if key == ord("m"):
+        return "", selected_pane_id, "context_menu", False
     shortcut_prefix = pending_key or (key_char and any(shortcut.startswith(key_char) for shortcut in shortcuts.values()))
     if key_char and shortcut_prefix:
         pending_key, action = advance_shortcut_state(pending_key, key_char, shortcuts)
@@ -670,6 +786,7 @@ def process_keypress(
 
 def run_interactive(stdscr) -> None:
     global _refresh_requested
+    global _menu_proc
 
     signal.signal(signal.SIGUSR1, _handle_sigusr1)
     _write_pid_file()
@@ -694,6 +811,9 @@ def run_interactive(stdscr) -> None:
     needs_render = True
 
     while True:
+        if _menu_proc is not None and _menu_proc.poll() is not None:
+            _menu_proc = None
+
         now = time.monotonic()
         signaled = _refresh_requested
         if signaled:
@@ -741,6 +861,17 @@ def run_interactive(stdscr) -> None:
                 scroll_offset = min(max_offset, scroll_offset + MOUSE_SCROLL_LINES)
                 user_scrolled = True
                 needs_render = True
+                continue
+            if bstate & (curses.BUTTON3_PRESSED | curses.BUTTON3_CLICKED):
+                pane_left, pane_top = get_pane_offset()
+                abs_x = pane_left + mx
+                abs_y = pane_top + my
+                row_idx = my + scroll_offset
+                if 0 <= row_idx < len(rows):
+                    show_context_menu(rows[row_idx], abs_x, abs_y)
+                else:
+                    show_empty_context_menu(abs_x, abs_y)
+                next_refresh_at = 0.0
                 continue
             if bstate & (curses.BUTTON1_PRESSED | curses.BUTTON1_CLICKED):
                 row_idx = my + scroll_offset
@@ -818,6 +949,17 @@ def run_interactive(stdscr) -> None:
             if target["kind"] == "pane":
                 subprocess.run(["tmux", "select-pane", "-t", target["pane_id"]], check=False)
             next_refresh_at = 0.0
+        elif action == "context_menu":
+            sel_idx = find_selected_row_index(rows, selected_pane_id)
+            if sel_idx is not None:
+                pane_left, pane_top = get_pane_offset()
+                screen_y = sel_idx - scroll_offset
+                show_context_menu(
+                    rows[sel_idx],
+                    pane_left + 2,
+                    pane_top + max(0, screen_y),
+                )
+            next_refresh_at = 0.0
 
 
 def interactive() -> None:
@@ -827,9 +969,24 @@ def interactive() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dump-render", action="store_true")
+    parser.add_argument("--dump-menu-args", nargs=3, metavar=("KIND", "SESSION", "TARGET"))
     args = parser.parse_args()
 
-    if args.dump_render:
+    if args.dump_menu_args:
+        kind, session, target = args.dump_menu_args
+        row: dict = {"kind": kind, "session": session}
+        if kind == "window":
+            row["window"] = target
+        elif kind == "pane":
+            row["window"] = target.rsplit(".", 1)[0] if "." in target else ""
+            row["pane_id"] = target
+        for arg in {
+            "session": _session_menu_args,
+            "window": _window_menu_args,
+            "pane": _pane_menu_args,
+        }[kind](row, 10, 5):
+            print(arg)
+    elif args.dump_render:
         dump_render()
     else:
         interactive()
