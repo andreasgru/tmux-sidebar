@@ -110,7 +110,7 @@ def load_tree() -> list[dict]:
                 visible_panes = [
                     pane for pane in window["panes"]
                     if badge_for_status(effective_pane_status(
-                        pane["label"], pane["title"], pane_states.get(pane["id"], {}),
+                        pane["id"], pane["label"], pane["title"], pane_states.get(pane["id"], {}),
                     ))
                 ]
             window_row: dict = {
@@ -125,7 +125,7 @@ def load_tree() -> list[dict]:
             for pane_index, pane in enumerate(visible_panes):
                 pane_last = pane_index == len(visible_panes) - 1
                 pane_state = pane_states.get(pane["id"], {})
-                badge = badge_for_status(effective_pane_status(pane["label"], pane["title"], pane_state))
+                badge = badge_for_status(effective_pane_status(pane["id"], pane["label"], pane["title"], pane_state))
                 label = pane_display_label(pane["label"], pane["title"], pane_state)
                 if badge:
                     label = f"{label} {badge}"

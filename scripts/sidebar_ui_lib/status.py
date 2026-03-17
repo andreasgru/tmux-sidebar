@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from .core import tmux_option
+from .core import run_tmux, tmux_option
 
 
 SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
@@ -126,27 +126,19 @@ def live_agent_app(command: str, title: str, state: dict | None) -> str:
     return state_agent_app(command, title, state)
 
 
-def codex_title_status(title: str) -> str:
-    match = re.search(r":\s*([a-z-]+)\s*$", title.strip().lower())
-    if not match:
+def codex_terminal_status(pane_id: str) -> str:
+    if not pane_id:
         return ""
-
-    suffix = match.group(1)
-    return {
-        "approval": "needs-input",
-        "complete": "done",
-        "completed": "done",
-        "done": "done",
-        "error": "error",
-        "failed": "error",
-        "failure": "error",
-        "finished": "done",
-        "input": "needs-input",
-        "waiting": "needs-input",
-    }.get(suffix, "")
+    try:
+        capture = run_tmux("capture-pane", "-pt", pane_id)
+    except Exception:
+        return ""
+    if re.search(r"^\s*[•·]\s+Working \([^)]*esc to interrupt\)\s*$", capture, re.MULTILINE):
+        return "running"
+    return ""
 
 
-def effective_pane_status(command: str, title: str, state: dict | None) -> str:
+def effective_pane_status(pane_id: str, command: str, title: str, state: dict | None) -> str:
     live_app = live_agent_app(command, title, state)
     if not live_app:
         return ""
@@ -155,9 +147,9 @@ def effective_pane_status(command: str, title: str, state: dict | None) -> str:
     if live_app == "codex":
         if status in ("running", "needs-input", "error", "done"):
             return status
-        title_status = codex_title_status(title)
-        if title_status:
-            return title_status
+        terminal_status = codex_terminal_status(pane_id)
+        if terminal_status:
+            return terminal_status
         return ""
 
     if status == "idle":

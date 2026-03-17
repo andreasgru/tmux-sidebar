@@ -76,9 +76,25 @@ def parse_codex(event: str, payload: str) -> tuple[str, str]:
         "finished",
         "stopped",
     }
+    idle_events = {
+        "session-start",
+    }
+    running_events = {
+        "agent-turn-start",
+        "agent-turn-started",
+        "start",
+        "task-start",
+        "task-started",
+        "turn-start",
+        "turn-started",
+    }
 
     if raw_event in done_events or status_hint in done_statuses:
         status = "done"
+    elif raw_event in idle_events:
+        status = "idle"
+    elif raw_event in running_events:
+        status = "running"
     elif (
         raw_event.startswith("permission")
         or raw_event.startswith("approve")

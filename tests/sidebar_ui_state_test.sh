@@ -165,7 +165,8 @@ EOF
 
 output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'codex ✅'
+assert_contains "$output" 'codex'
+assert_not_contains "$output" '✅'
 assert_not_contains "$output" '⏳'
 
 fake_tmux_set_tree <<'EOF'
@@ -173,6 +174,21 @@ work|@1|editor|%14|codex-aarch64-apple-darwin|● project: working on task|1
 EOF
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%14.json" <<'EOF'
 {"pane_id":"%14","app":"codex","status":"idle","pane_title":"● project: done","updated_at":100}
+EOF
+fake_tmux_set_capture "%14" <<'EOF'
+• Working (15s • esc to interrupt)
+EOF
+
+output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"
+
+assert_contains "$output" 'codex'
+assert_contains "$output" '⏳'
+
+fake_tmux_set_tree <<'EOF'
+work|@1|editor|%15|codex-aarch64-apple-darwin|● project: working on task|1
+EOF
+cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%15.json" <<'EOF'
+{"pane_id":"%15","app":"codex","status":"idle","pane_title":"● project: working on task","updated_at":100}
 EOF
 
 output="$(python3 scripts/sidebar-ui.py --dump-render 2>&1)"

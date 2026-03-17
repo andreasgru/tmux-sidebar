@@ -93,6 +93,10 @@ export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-running-status.txt"
 printf '%s' '{"status":"running"}' | bash scripts/hook-codex.sh
 assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
 
+export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-task-started.txt"
+printf '%s' '{"summary":"Starting work"}' | bash scripts/hook-codex.sh task_started
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status running'
+
 export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-noise-skipped.txt"
 rm -f "$TEST_HOOK_CAPTURE"
 printf '' | bash scripts/hook-codex.sh
@@ -102,6 +106,6 @@ rm -f "$TEST_HOOK_CAPTURE"
 printf '%s' '{"summary":"Working"}' | bash scripts/hook-codex.sh
 [ ! -f "$TEST_HOOK_CAPTURE" ] || fail "ambiguous codex events should be skipped"
 
-rm -f "$TEST_HOOK_CAPTURE"
+export TEST_HOOK_CAPTURE="$TEST_TMP/codex-hook-session-start.txt"
 printf '%s' '{"summary":"Ready"}' | bash scripts/hook-codex.sh session-start
-[ ! -f "$TEST_HOOK_CAPTURE" ] || fail "session-start noise should be skipped"
+assert_file_contains "$TEST_HOOK_CAPTURE" '--status idle'
