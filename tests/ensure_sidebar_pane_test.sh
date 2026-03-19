@@ -24,6 +24,19 @@ assert_eq "$(fake_tmux_current_pane)" "%1"
 
 fake_tmux_no_sidebar
 fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
+printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
+printf 'shell\n' > "$TEST_TMUX_DATA_DIR/split_window_pane_title.txt"
+: > "$TEST_TMUX_DATA_DIR/fail_allow_set_title.txt"
+
+bash scripts/features/sidebar/ensure-sidebar-pane.sh
+
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'set-option -p -t %99 allow-set-title off'
+assert_file_contains "$TEST_TMUX_DATA_DIR/commands.log" 'select-pane -t %99 -T Sidebar'
+assert_file_contains "$TEST_TMUX_DATA_DIR/pane_99.meta" 'pane_title=Sidebar'
+assert_eq "$(fake_tmux_current_pane)" "%1"
+
+fake_tmux_no_sidebar
+fake_tmux_register_pane "%1" "work" "@1" "editor" "nvim"
 fake_tmux_add_sidebar_pane "%90" "@2"
 printf '1\n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_enabled.txt"
 

@@ -39,6 +39,7 @@ real_tmux_start_server() {
   mkdir -p "$REAL_TMUX_STATE_DIR"
   real_tmux new-session -d -s work -n editor
   real_tmux set-environment -g TMUX_SIDEBAR_STATE_DIR "$REAL_TMUX_STATE_DIR"
+  real_tmux set-option -g remain-on-exit on
   real_tmux set-option -g status off
 }
 
@@ -55,6 +56,7 @@ real_tmux_wait_for_sidebar_pane() {
   local window_id="$1"
   local attempts="${2:-100}"
   local pane_id=""
+  local pane_snapshot=""
   local _attempt
 
   for _attempt in $(seq 1 "$attempts"); do
@@ -69,7 +71,8 @@ real_tmux_wait_for_sidebar_pane() {
     sleep 0.05
   done
 
-  fail "sidebar pane did not appear in window [$window_id]"
+  pane_snapshot="$(real_tmux list-panes -t "$window_id" -F '#{pane_id}|#{pane_title}|#{pane_current_command}' 2>&1 || true)"
+  fail "sidebar pane did not appear in window [$window_id]; panes: [$pane_snapshot]"
 }
 
 real_tmux_wait_for_capture() {

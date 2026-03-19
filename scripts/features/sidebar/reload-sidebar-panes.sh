@@ -11,5 +11,5 @@ list_sidebar_panes \
   | while IFS='|' read -r pane_id _window_id; do
       [ -n "$pane_id" ] || continue
       tmux respawn-pane -k -t "$pane_id" "$sidebar_command"
-      tmux set-option -p -t "$pane_id" allow-set-title off
+      tmux set-option -p -t "$pane_id" allow-set-title off 2>/dev/null || true
     done

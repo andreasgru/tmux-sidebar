@@ -90,7 +90,7 @@ if [ -n "$current_pane" ]; then
   split_window_args=(-t "$current_pane" "${split_window_args[@]}")
 fi
 sidebar_pane="$(tmux split-window "${split_window_args[@]}" "$sidebar_command")"
-tmux set-option -p -t "$sidebar_pane" allow-set-title off
+tmux set-option -p -t "$sidebar_pane" allow-set-title off 2>/dev/null || true
 tmux select-pane -t "$sidebar_pane" -T "$(sidebar_pane_title)"
 tmux set-option -g "$sidebar_pane_option" "$sidebar_pane"
 if [ "$focus_sidebar" = "1" ]; then
