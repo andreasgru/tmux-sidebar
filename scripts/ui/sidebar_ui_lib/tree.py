@@ -5,7 +5,7 @@ import subprocess
 from collections import OrderedDict
 
 from .core import STATE_DIR, SIDEBAR_TITLES, configured_sidebar_width, run_tmux, tmux_option
-from .status import badge_for_status, effective_pane_status, normalize_token, pane_display_label, window_display_name
+from .status import badge_for_status, effective_pane_status, live_agent_app, normalize_token, pane_display_label, window_display_name
 
 
 def ordered_sessions(sessions: OrderedDict[str, dict]) -> list[dict]:
@@ -43,12 +43,20 @@ def configured_filter_tokens() -> list[str]:
 def pane_matches_filter(pane: dict, pane_state: dict, filter_tokens: list[str]) -> bool:
     if not filter_tokens:
         return True
+    state_command = str(pane_state.get("pane_current_command", ""))
+    state_title = str(pane_state.get("pane_title", ""))
     candidates = [
         normalize_token(pane["label"]),
         normalize_token(pane["title"]),
         normalize_token(str(pane_state.get("app", ""))),
+        normalize_token(state_command),
+        normalize_token(state_title),
+        normalize_token(live_agent_app(pane["label"], pane["title"], pane_state)),
+        normalize_token(live_agent_app(state_command, state_title, pane_state)),
         pane["label"].strip().lower(),
         pane["title"].strip().lower(),
+        state_command.strip().lower(),
+        state_title.strip().lower(),
     ]
     return any(token and any(token in candidate for candidate in candidates if candidate) for token in filter_tokens)
 

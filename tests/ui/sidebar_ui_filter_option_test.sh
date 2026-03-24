@@ -14,6 +14,7 @@ work|@2|runner|%3|node|repo worker|0
 ops|@3|review|%4|python3|assistant runner|0
 ops|@4|shells|%5|zsh|zsh|0
 scratch|@5|notes|%6|bash|bash|0
+scratch|@6|2.1.76|%7|2.1.76|2.1.76|0
 EOF
 
 cat > "$TMUX_SIDEBAR_STATE_DIR/pane-%3.json" <<'EOF'
@@ -47,6 +48,7 @@ assert_contains "$output" '"%3"'
 assert_contains "$output" '"%4"'
 assert_contains "$output" '"%5"'
 assert_contains "$output" '"%6"'
+assert_contains "$output" '"%7"'
 
 printf ' codex , CLAUDE , opencode \n' > "$TEST_TMUX_DATA_DIR/option__tmux_sidebar_filter.txt"
 
@@ -73,13 +75,16 @@ assert_contains "$output" '"%3"'
 assert_contains "$output" '"%4"'
 assert_not_contains "$output" '"%5"'
 assert_not_contains "$output" '"%6"'
+assert_contains "$output" '"%7"'
 
 assert_contains "$output" 'work'
 assert_contains "$output" 'ops'
-assert_not_contains "$output" 'scratch'
+assert_contains "$output" 'scratch'
 assert_contains "$output" 'runner'
 assert_contains "$output" 'review'
 assert_not_contains "$output" 'shells'
+assert_contains "$output" 'claude'
+assert_not_contains "$output" 'notes'
 
 output="$(python3 - <<'PY'
 import importlib.util
