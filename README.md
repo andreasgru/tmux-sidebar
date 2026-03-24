@@ -291,6 +291,9 @@ set -g @tmux_sidebar_install_agent_hooks 1   # default: 0
 Agent badges are written through
 `scripts/features/state/update-pane-state.sh`.
 
+Custom integrations should report the current pane, usually via
+`--pane "$TMUX_PANE"`.
+
 ### Quick setup
 
 Choose one setup path:
