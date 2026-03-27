@@ -25,7 +25,7 @@ fake_tmux_register_main_pane "%9"
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
 assert_contains "$output" '├─ work'
-assert_contains "$output" '│     └─ claude'
+assert_contains "$output" '│     └─ C claude'
 assert_contains "$output" '▶       └─ tail'
 case "$output" in
   *'%99 Sidebar'* ) fail "sidebar pane should be hidden when window has other panes" ;;
@@ -131,7 +131,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'claude ⏳'
+assert_contains "$output" 'C claude ⏳'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%11|node|repo worker|1
@@ -142,7 +142,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'codex ⏳'
+assert_contains "$output" 'X codex ⏳'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%111|node|repo worker|1
@@ -153,7 +153,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'opencode ⏳'
+assert_contains "$output" 'O opencode ⏳'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%112|zsh|zsh|1
@@ -164,7 +164,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'cursor ⏳'
+assert_contains "$output" 'U cursor ⏳'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%113|zsh|zsh|1
@@ -175,7 +175,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'cursor ❓'
+assert_contains "$output" 'U cursor ❓'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%114|zsh|zsh|1
@@ -186,7 +186,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'cursor ✅'
+assert_contains "$output" 'U cursor ✅'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%115|zsh|zsh|1
@@ -197,7 +197,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'cursor ❌'
+assert_contains "$output" 'U cursor ❌'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|zsh|%116|zsh|zsh|1
@@ -233,7 +233,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'codex ⏳'
+assert_contains "$output" 'X codex ⏳'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%9|codex-aarch64-apple-darwin|codex --full-auto|1
@@ -244,7 +244,7 @@ EOF
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'codex ✅'
+assert_contains "$output" 'X codex ✅'
 
 fake_tmux_set_tree <<'EOF'
 work|@1|editor|%12|codex-aarch64-apple-darwin|codex --full-auto|1
@@ -392,7 +392,7 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'claude ⏳'
+assert_contains "$output" 'C claude ⏳'
 assert_not_contains "$output" '2.1.76'
 
 fake_tmux_set_tree <<'EOF'
@@ -402,7 +402,7 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'claude ✅'
+assert_contains "$output" 'C claude ✅'
 assert_not_contains "$output" '2.1.76'
 
 fake_tmux_set_tree <<'EOF'
@@ -412,4 +412,4 @@ rm -f "$TMUX_SIDEBAR_STATE_DIR"/pane-*.json
 
 output="$(python3 scripts/ui/sidebar-ui.py --dump-render 2>&1)"
 
-assert_contains "$output" 'claude ❌'
+assert_contains "$output" 'C claude ❌'

@@ -32,6 +32,12 @@ DEFAULT_BADGES: dict[str, str] = {
     "done": "✅",
     "error": "❌",
 }
+DEFAULT_ICONS: dict[str, str] = {
+    "claude": "C",
+    "codex": "X",
+    "opencode": "O",
+    "cursor": "U",
+}
 BADGE_OPTIONS: dict[str, str] = {
     "running": "@tmux_sidebar_badge_running",
     "needs-input": "@tmux_sidebar_badge_needs_input",
@@ -57,6 +63,10 @@ def configured_badges() -> dict[str, str]:
 
 def badge_for_status(status: str) -> str:
     return configured_badges().get(status, "")
+
+
+def icon_for_app(app: str) -> str:
+    return DEFAULT_ICONS.get(app, "")
 
 
 def normalize_token(value: str) -> str:
@@ -183,6 +193,10 @@ def pane_display_label(command: str, title: str, state: dict | None) -> str:
     if live_app:
         return live_app
     return command
+
+
+def pane_icon(command: str, title: str, state: dict | None) -> str:
+    return icon_for_app(live_agent_app(command, title, state))
 
 
 def auto_window_name(window_name: str, panes: list[dict]) -> bool:
